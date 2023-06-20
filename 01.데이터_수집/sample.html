@@ -5,15 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
-        /* HTML 태그 방식 */ 
-        h1 { color: #f0f; } 
-        h2 { color: #06f; }
-
         /** Class 방식 */ 
-        /** 특정 대상을 구체적으로 명시  */ 
+        /* myclass 속성에 적용 (python)*/
+        .myclass { color: #f00; } 
+ 
+        /** id 방식 */ 
+        /* myid 속성에 적용 */
+        #myid { color: #f60; } 
+        
+        /* myid2 속성에 적용 */
+        /* 본인 임의로 생성 */
+        #myid2 { 
+            color: white;
+            background-color: #000;} 
+ 
+        /** 자식 선택자  */ 
+        /* 자식 선택자 설정 */
+        .syllabus > li > ol > li { 
+            text-decoration: underline; 
+        } 
+ 
+        /** 자손 선택자 */ 
+        /* 자손 선택자 설정 */
+        .syllabus ol { 
+            font-weight: bold; 
+        } 
+
+        /* .part1의 속성에 적용 */
+        .part1 { 
+            background-color: #eeeeee; 
+        } 
+
+        /* .part2의 속성에 적용 */
+        .part2 { 
+            background-color: #d5d5d5; 
+        } 
+ 
+        /** 특정 대상을 구체적으로 명시 할것 */ 
+        /* div태그에서 subpart2 속성에 적용 */
         div.sub.part1 { 
-            border: 1px dotted #000;
-            background-color: #f0f; 
+            border: 3px dotted #000;
+            /* background-color: yellowgreen; */
+            /* background-color는 본인이 임의로 삽입 */
+        } 
+        
+        /* div태그의 subpart2 의 id가 hello인 속성에 적용 */
+        div.sub.part2#hello { 
+            border: 1px solid #555; 
+        } 
+ 
+        /** 특정 속성을 갖고 있는 요소  */ 
+        /* a태그의 href가 공백인 속성에 적용 */
+        a[href] { 
+            font-size: 20px; 
+        }
+
+        /** 특정 속성 값에 대한 적용  */ 
+        /* a태그의 href가 #인 속성에 적용 */
+        a[href='#'] { 
+            color: green; 
         }
     </style>
 </head>
@@ -24,6 +74,8 @@
     <a href="https://www.naver.com">link2</a>
     <h2 id="myid">Python</h2>
 
+    <!-- div 태그의 class는 sub part1로
+    특정 속성을 설정 및 분리 -->
     <div class="sub part1">
         <li>변수와 데이터 타입</li>
         <li class="myclass">연산자</li>
@@ -40,21 +92,25 @@
     </div>
     
 
-    <!--  -->
-    <h2>Data Analysis</h2>
-    <li>데이터 수집</li> 
-    <li class="myclass">데이터 전처리</li> 
-    <li> 
-        탐색적 데이터 분석 
-        <ol class="myclass"> 
-            <li>기초통계</li> 
-            <li>데이터 시각화</li> 
-        </ol> 
-    </li> 
-    <li>확증적 데이터 분석</li> 
-    <li>데이터 마이닝</li>
-    
+    <!-- id="myid2"는 본인 임의로 -->
+    <h2 id="myid2">Data Analysis</h2> 
+    <!-- class는 sub part2,
+    id는 hello로 특정 속성을 설정 -->
+    <div class="sub part2" id="hello"> 
+        <ul> 
+            <li>데이터 수집</li> 
+            <li class="myclass">데이터 전처리</li> 
+            <li> 
+                탐색적 데이터 분석 
+                <ol class="myclass"> 
+                    <li>기초통계</li> 
+                    <li>데이터 시각화</li> 
+                </ol> 
+            </li> 
+            <li>확증적 데이터 분석</li> 
+            <li>데이터 마이닝</li> 
+        </ul> 
+    </div>
 
-    
 </body>
 </html>
