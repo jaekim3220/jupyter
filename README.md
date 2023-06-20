@@ -2,3 +2,7 @@
 ## 김재현
 ----------
 .ipynb로 jupyter 선언
+----------
+2023620-2교시
+sample.html링크
+https://data.hossam.kr/sample.html
