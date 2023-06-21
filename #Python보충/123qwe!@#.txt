@@ -4,3 +4,9 @@ for i in range(0, len(리스트)-1):
         if 리스트[i]>리스트[j]:
             리스트[i],리스트[j] = 리스트[j],리스트[i]
 ----------
+temp 활용\
+list = ['a', 'b', 'c', 'd', 'e']
+temp = list[0]
+list[0] = list[1]
+list[1] = temp
+print(list)
