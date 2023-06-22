@@ -10,3 +10,5 @@ temp = list[0]
 list[0] = list[1]
 list[1] = temp
 print(list)
+----------
+메일 자동화 사용 시 네이버 메일 환경설정에서 "POP3/IMAP"설정 변경
