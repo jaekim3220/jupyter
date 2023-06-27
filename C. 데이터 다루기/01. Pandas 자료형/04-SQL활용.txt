@@ -1,0 +1,21 @@
+일반적인 컴퓨터 엑셀로 만 단위의 데이터를 처리할 수 없기 때문에 DB에 저장, 활용하는 방법을 이해
+
+- docker start 사용id
+- show databases:
+- use <사용할 DB이름>;
+- show tables;로 내부 테이블 확인
+- describe <테이블이름>;
+여기서는 이전에 생성한 django의 board_main_post 테이블을 사용할 것
+
+docker를 사용해 서버주소, 포트번호, 계정이름, 비밀번호, DB이름 확인
+아니면 django의 setting에서 확인
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'board',
+        'USER': 'root',
+        'PASSWORD': '1234',
+        'HOST': '127.0.0.1',
+        'PORT': '3406'
+    }
+}
