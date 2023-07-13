@@ -2,11 +2,14 @@ import numpy as np
 from pandas import DataFrame
 from sklearn.impute import SimpleImputer
 
+
+
 def replaceMissingValue(df):
     imr = SimpleImputer(missing_values=np.nan, strategy='mean')
     df_imr = imr.fit_transform(df.values)
     re_df = DataFrame(df_imr, index=df.index, columns=df.columns)
     return re_df
+
 
 
 def getIq(field):
@@ -17,6 +20,7 @@ def getIq(field):
     상한 = q3 + 1.5 * iqr
     결측치경계 = [하한, 상한]
     return 결측치경계
+
 
 
 def replaceOutlier(df, fieldName):
@@ -32,6 +36,7 @@ def replaceOutlier(df, fieldName):
         cdf.loc[cdf[f] > 결측치경계[1], f] = np.nan
 
     return cdf
+
 
 
 def setCategory(df, ignore=[]):
@@ -69,3 +74,20 @@ def setCategory(df, ignore=[]):
             cdf[field_name] = cdf[field_name].astype('category')
 
     return cdf
+
+
+
+def clearStopwords(nouns, stopwords_file_path="wordcloud/stopwords-ko.txt"):
+    with open(stopwords_file_path, 'r', encoding='utf-8') as f:
+        stopwords = f.readlines()
+        
+        for i, v in enumerate(stopwords):
+            stopwords[i] = v.strip()
+
+    data_set = []
+
+    for v in nouns:
+        if v not in stopwords:
+            data_set.append(v)
+
+    return data_set
