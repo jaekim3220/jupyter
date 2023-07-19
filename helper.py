@@ -3,6 +3,7 @@ from pandas import DataFrame
 from math import sqrt
 from scipy.stats import t
 from sklearn.impute import SimpleImputer
+from scipy.stats import ks_2samp, bartlett, fligner, levene
 
 
 
@@ -107,3 +108,19 @@ def get_confidence_interval(data, clevel=0.95):
     cmin, cmax = t.interval(clevel, dof, loc=sample_mean, scale=sample_std_error)
     
     return (cmin, cmax)
+
+
+# 분산분석(일원분산분석 (One-way ANOVA)) 모듈
+def equal_variance_test(*any):
+    # statistic=1.333315753388535, pvalue=0.2633161881599037
+    s1, p1 = bartlett(*any)
+    s2, p2 = fligner(*any)
+    s3, p3 = levene(*any)
+
+    df = DataFrame({
+        'statistic': [s1, s2, s3],
+        'p-value': [p1, p2, p3],
+        'equal-var': [p1 > 0.05, p2 > 0.05, p3 > 0.05]
+    }, index=['Bartlett', 'Fligner', 'Levene'])
+
+    return df
