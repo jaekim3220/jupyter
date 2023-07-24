@@ -1,9 +1,16 @@
 import numpy as np
 from pandas import DataFrame, MultiIndex, concat
 from math import sqrt
-from scipy.stats import t
+from scipy.stats import t, pearsonr
 from sklearn.impute import SimpleImputer
 from scipy.stats import shapiro, normaltest, ks_2samp, bartlett, fligner, levene, chi2_contingency
+#--------------------------------------------------
+# 모듈 불러오기
+# import sys
+# import os
+# sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
+# from helper import normality_test, equal_variance_test, independence_test, all_test
+#--------------------------------------------------
 
 
 
@@ -198,3 +205,29 @@ def independence_test(*any):
 
 def all_test(*any):
     return concat([normality_test(*any), equal_variance_test(*any), independence_test(*any)])
+
+
+#------------------------------
+# 피어슨 상관분석
+#------------------------------
+def pearson_r(df):
+    names = df.columns
+    n = len(names)
+    pv = 0.05
+
+    data = []
+
+    for i in range(0, n):
+        # 기본적으로 i 다음 위치를 의미하지만 i가 마지막 인덱스일 경우 0으로 설정
+        j = i + 1 if i < n - 1 else 0
+
+        fields = names[i] + ' vs ' + names[j]
+        s, p = pearsonr(df[names[i]], df[names[j]])
+        result = p < pv
+
+        data.append({'fields': fields, 'statistic': s, 'pvalue': p, 'result': result})
+
+    rdf = DataFrame(data)
+    rdf.set_index('fields', inplace=True)
+    
+    return rdf
