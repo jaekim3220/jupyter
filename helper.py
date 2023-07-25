@@ -447,6 +447,9 @@ def ext_ols(data, y, x):
 
     # 두 번째 표의 내용을 딕셔너리로 분해하여 my에 추가
     my['variables'] = []
+    # 추가
+    name_list = list(data.columns)
+    print(name_list)
 
     for i, v in enumerate(summary.tables[1].data):
         if i == 0:
@@ -454,16 +457,15 @@ def ext_ols(data, y, x):
 
         # 변수의 이름
         name = v[0].strip()
-        # 변수의 이름 목록
-        name_list = list(model.exog_names)
-        # 변수의 이름 목록에서 현재 변수가 몇 번째 항목인지 찾기
-        j = name_list.index(name)
 
         vif = 0
 
-        # 0번째인 Intercept는 제외
-        if j > 0:
-            vif = variance_inflation_factor(model.exog, j)
+        # Intercept는 제외
+        if name in name_list:
+            # 변수의 이름 목록에서 현재 변수가 몇 번째 항목인지 찾기
+            j = name_list.index(name)
+            # data는 df 원본으로 변경
+            vif = variance_inflation_factor(data, j)
 
         my['variables'].append({
             "name": name,
