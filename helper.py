@@ -4,6 +4,9 @@ from math import sqrt
 from scipy.stats import t, pearsonr, spearmanr
 from sklearn.impute import SimpleImputer
 from scipy.stats import shapiro, normaltest, ks_2samp, bartlett, fligner, levene, chi2_contingency
+from statsmodels.formula.api import ols
+import re
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 #--------------------------------------------------
 # 모듈 불러오기
 # import sys
@@ -15,6 +18,18 @@ from scipy.stats import shapiro, normaltest, ks_2samp, bartlett, fligner, levene
 
 
 def replaceMissingValue(df):
+    """
+    결측치 정제
+
+    Parameters
+    -------
+    - df: 데이터 프레임
+    - strategy: 결측치 대체 전략(mean, median, most_frequent). 기본값은 mean
+
+    Returns
+    -------
+    - re_df: 정제된 데이터 프레임
+    """
     imr = SimpleImputer(missing_values=np.nan, strategy='mean')
     df_imr = imr.fit_transform(df.values)
     re_df = DataFrame(df_imr, index=df.index, columns=df.columns)
@@ -23,6 +38,17 @@ def replaceMissingValue(df):
 
 
 def getIq(field):
+    """
+    IQR(Interquartile Range)를 이용한 이상치 경계값 계산
+
+    Parameters
+    ------- 
+    - field: 데이터 프레임의 필드
+
+    Returns
+    -------
+    - 결측치경계: 이상치 경계값 리스트
+    """
     q1 = field.quantile(q=0.25)
     q3 = field.quantile(q=0.75)
     iqr = q3 - q1
@@ -34,6 +60,18 @@ def getIq(field):
 
 
 def replaceOutlier(df, fieldName):
+    """
+    이상치를 판별하여 결측치로 치환
+
+    Parameters
+    -------
+    - df: 데이터 프레임
+    - fieldName: 이상치를 판별할 필드명
+
+    Returns
+    -------
+    - cdf : 결측치를 이상치로 치환한 데이터 프레임
+    """
     cdf = df.copy()
 
     # fieldName이 List가 아니면 List로 변환
@@ -50,6 +88,18 @@ def replaceOutlier(df, fieldName):
 
 
 def setCategory(df, ignore=[]):
+    """
+    데이터 프레임에서 지정된 필드를 범주형으로 변경한다.
+
+    Parameters
+    -------
+    - df: 데이터 프레임
+    - fields: 범주형으로 변경할 필드명 리스트. 기본값은 빈 리스트(전체 필드 대상)
+
+    Returns
+    -------
+    - cdf: 범주형으로 변경된 데이터 프레임
+    """
     cdf = df.copy()
     # 데이터 프레임의 변수명을 리스트로 변환
     ilist = list(cdf.dtypes.index)
@@ -88,6 +138,18 @@ def setCategory(df, ignore=[]):
 
 
 def clearStopwords(nouns, stopwords_file_path="wordcloud/stopwords-ko.txt"):
+    """
+    불용어를 제거한다.
+
+    Parameters
+    -------
+    - nouns: 명사 리스트
+    - stopwords_file_path: 불용어 파일 경로. 기본값은 wordcloud/stopwords-ko.txt
+
+    Returns
+    -------
+    - data_set: 불용어가 제거된 명사 리스트
+    """
     with open(stopwords_file_path, 'r', encoding='utf-8') as f:
         stopwords = f.readlines()
         
@@ -105,6 +167,19 @@ def clearStopwords(nouns, stopwords_file_path="wordcloud/stopwords-ko.txt"):
 
 # 신뢰구간 생성
 def get_confidence_interval(data, clevel=0.95):
+    """
+    신뢰구간 계산
+
+    Parameters
+    -------
+    - data: 데이터
+    - clevel: 신뢰수준. 기본값은 0.95
+
+    Returns
+    -------
+    - cmin: 신뢰구간 하한
+    - cmax: 신뢰구간 상한
+    """
     n = len(data)                           # 샘플 사이즈
     dof = n - 1                             # 자유도
     sample_mean = data.mean()               # 표본 평균
@@ -123,6 +198,17 @@ def get_confidence_interval(data, clevel=0.95):
 
 # 분산분석(일원분산분석 (One-way ANOVA)) 모듈2 -> 추가내용 : DataFrame 생성용
 def normality_test(*any):
+    """
+    분산분석을 수행하기 위한 정규성을 검정 한다.
+
+    Parameters
+    -------
+    - any: 필드들
+
+    Returns
+    -------
+    - df: 검정 결과 데이터 프레임
+    """
     names = []
 
     result = {
@@ -159,6 +245,17 @@ def normality_test(*any):
 
 # 분산분석(일원분산분석 (One-way ANOVA)) 모듈1
 def equal_variance_test(*any):
+    """
+    분산분석을 수행하기 위한 등분산성을 검정 한다.
+
+    Parameters
+    -------
+    - any: 필드들
+
+    Returns
+    -------
+    - df: 검정 결과 데이터 프레임
+    """
     # statistic=1.333315753388535, pvalue=0.2633161881599037
     s1, p1 = bartlett(*any)
     s2, p2 = fligner(*any)
@@ -182,6 +279,17 @@ def equal_variance_test(*any):
     return df
 
 def independence_test(*any):
+    """
+    분산분석을 수행하기 위한 독립성을 검정한다.
+
+    Parameters
+    -------
+    - any: 필드들
+
+    Returns
+    -------
+    - df: 검정 결과 데이터 프레임
+    """
     df = DataFrame(any).T
     result = chi2_contingency(df)
 
@@ -204,6 +312,17 @@ def independence_test(*any):
     return df
 
 def all_test(*any):
+    """
+    정규성, 등분산성, 독립성을 모두 검정한다.
+
+    Parameters
+    -------
+    - any: 필드들
+
+    Returns
+    -------
+    - df: 검정 결과 데이터 프레임
+    """
     return concat([normality_test(*any), equal_variance_test(*any), independence_test(*any)])
 
 
@@ -211,6 +330,17 @@ def all_test(*any):
 # 피어슨 상관분석
 #------------------------------
 def pearson_r(df):
+    """
+    피어슨 상관계수를 사용하여 상관분석을 수행한다.
+
+    Parameters
+    -------
+    - df: 데이터 프레임
+
+    Returns
+    -------
+    - rdf: 상관분석 결과 데이터 프레임
+    """
     names = df.columns
     n = len(names)
     pv = 0.05
@@ -235,6 +365,17 @@ def pearson_r(df):
 # 스피어만 상관분석
 #------------------------------
 def spearman_r(df):
+    """
+    스피어만 상관계수를 사용하여 상관분석을 수행한다.
+
+    Parameters
+    -------
+    - df: 데이터 프레임
+
+    Returns
+    -------
+    - rdf: 상관분석 결과 데이터 프레임
+    """
     names = df.columns
     n = len(names)
     pv = 0.05
@@ -255,3 +396,127 @@ def spearman_r(df):
     rdf.set_index('fields', inplace=True)
     
     return rdf
+
+
+#------------------------------
+# 회귀분석 모듈
+#------------------------------
+def ext_ols(data, y, x):
+    """
+    회귀분석을 수행한다.
+
+    Parameters
+    -------
+    - data : 데이터 프레임
+    - y: 종속변수 이름
+    - x: 독립변수의 이름들(리스트)
+    """
+    # 독립변수 이름이 리스트가 아니라면 리스트로 변환
+    if type(x) != list:
+        x = [x]
+
+    # 종속변수~독립변수1+독립변수2+독립변수3+... 형태의 식을 생성
+    expr = "%s~%s" % (y, "+".join(x))
+
+    # 회귀모델 생성
+    model = ols(expr, data=data)
+    # 분석 수행
+    fit = model.fit
+
+    # 파이썬 분석 결과를 변수에 저장
+    summary = fit.summary()
+
+    # 첫 번쨰, 세 번쨰 표의 내용을 딕셔너리로 분해
+    my = {}
+
+    for k in range(0,3,2):
+        items = summary.tables[k].data
+        # print(items)
+
+        for item in items:
+            # print(item)
+            n = len(item)
+
+            for i in range(0, n, 2):
+                key = item[i].strip()[:-1]
+                value = item[i+1].strip()
+
+                if key and value:
+                    my[key] = value
+
+    # 두 번째 표의 내용을 딕셔너리로 분해해 my에 추가
+    my['variables'] = []
+
+    for i, v in enumerate(summary.tables[1].data):
+        if i == 0:
+            continue
+
+        # 변수의 이름
+        name = v[0].strip()
+        # 변수의 이름 목록
+        name_list = list(model.exog_names)
+        # 변수의 이름 목록에서 현재 변수가 몇 번째 항목인지 찾기
+        j = name_list.index(name)
+
+        vif = 0
+
+        # 0번째인 Intercept는 제외
+        if j > 0:
+            vif = variance_inflation_factor(model.exog, j)
+
+        my['variables'].append({
+            "name": name,
+            "coef": v[1].strip(),
+            "std err": v[2].strip(),
+            "t": v[3].strip(),
+            "P-value": v[4].strip(),
+            "Beta": 0,
+            "VIF": vif,
+        })
+
+    # 결과표를 데이터프레임으로 구성
+    mylist = []
+    yname_list = []
+    xname_list = []
+
+    for i in my['variables']:
+        if i['name'] == 'Intercept':
+            continue
+
+        yname_list.append(y)
+        xname_list.append(i['name'])
+
+        item = {
+            "B": i['coef'],
+            "표준오차": i['std err'],
+            "β": i['Beta'],
+            "t": "%s*" % i['t'],
+            "유의확률": i['P-value'],
+            "VIF": i["VIF"]
+        }
+
+        mylist.append(item)
+
+    table = DataFrame(mylist,
+                   index=MultiIndex.from_arrays([yname_list, xname_list], names=['종속변수', '독립변수']))
+    
+    # 분석결과
+    result = "𝑅(%s), 𝑅^2(%s), 𝐹(%s), 유의확률(%s), Durbin-Watson(%s)" % (my['R-squared'], my['Adj. R-squared'], my['F-statistic'], my['Prob (F-statistic)'], my['Durbin-Watson'])
+
+    # 모형 적합도 보고
+    goodness = "%s에 대하여 %s로 예측하는 회귀분석을 실시한 결과, 이 회귀모형은 통계적으로 %s(F(%s,%s) = %s, p < 0.05)." % (y, ",".join(x), "유의하다" if float(my['Prob (F-statistic)']) < 0.05 else "유의하지 않다", my['Df Model'], my['Df Residuals'], my['F-statistic'])
+
+    # 독립변수 보고
+    varstr = []
+
+    for i, v in enumerate(my['variables']):
+        if i == 0:
+            continue
+        
+        s = "%s의 회귀계수는 %s(p%s0.05)로, %s에 대하여 %s."
+        k = s % (v['name'], v['coef'], "<" if float(v['P-value']) < 0.05 else '>', y, '유의미한 예측변인인 것으로 나타났다' if float(v['P-value']) < 0.05 else '유의하지 않은 예측변인인 것으로 나타났다')
+
+        varstr.append(k)
+
+    # 리턴
+    return (model, fit, summary, table, result, goodness, varstr)
