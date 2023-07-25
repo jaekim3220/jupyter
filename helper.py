@@ -411,7 +411,8 @@ def ext_ols(data, y, x):
     - y: 종속변수 이름
     - x: 독립변수의 이름들(리스트)
     """
-    # 독립변수 이름이 리스트가 아니라면 리스트로 변환
+
+    # 독립변수의 이름이 리스트가 아니라면 리스트로 변환
     if type(x) != list:
         x = [x]
 
@@ -421,15 +422,15 @@ def ext_ols(data, y, x):
     # 회귀모델 생성
     model = ols(expr, data=data)
     # 분석 수행
-    fit = model.fit
+    fit = model.fit()
 
-    # 파이썬 분석 결과를 변수에 저장
+    # 파이썬 분석결과를 변수에 저장한다.
     summary = fit.summary()
 
-    # 첫 번쨰, 세 번쨰 표의 내용을 딕셔너리로 분해
+    # 첫 번째, 세 번째 표의 내용을 딕셔너리로 분해
     my = {}
 
-    for k in range(0,3,2):
+    for k in range(0, 3, 2):
         items = summary.tables[k].data
         # print(items)
 
@@ -444,7 +445,7 @@ def ext_ols(data, y, x):
                 if key and value:
                     my[key] = value
 
-    # 두 번째 표의 내용을 딕셔너리로 분해해 my에 추가
+    # 두 번째 표의 내용을 딕셔너리로 분해하여 my에 추가
     my['variables'] = []
 
     for i, v in enumerate(summary.tables[1].data):
