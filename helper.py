@@ -89,7 +89,7 @@ def replaceOutlier(df, fieldName):
 
 
 
-def setCategory(df, ignore=[]):
+def setCategory(df, fields=[]):
     """
     데이터 프레임에서 지정된 필드를 범주형으로 변경한다.
 
@@ -115,22 +115,18 @@ def setCategory(df, ignore=[]):
             # 변수명을 가져온다.
             field_name = ilist[i]
 
-            # 제외목록이 있고, 해당 변수명이 제외목록에 포함되어 있으면 다음 변수로 이동
-            if ignore and field_name in ignore:
+            # 대상 필드 목록이 설정되지 않거나(전체필드 대상), 현재 필드가 대상 필드목록에 포함되어 있지 않다면?
+            if not fields or field_name not in fields:
                 continue
 
             # 가져온 변수명에 대해 값의 종류별로 빈도를 카운트 한 후 인덱스 이름순으로 정렬
             vc = cdf[field_name].value_counts().sort_index()
-            #print(vc)
+            # print(vc)
 
             # 인덱스 이름순으로 정렬된 값의 종류별로 반복 처리
             for ii, vv in enumerate(list(vc.index)):
-                # 일련번호값 생성
-                vnum = ii + 1
-                #print(vv, " -->", vnum)
-
                 # 일련번호값으로 치환
-                cdf.loc[cdf[field_name] == vv, field_name] = vnum
+                cdf.loc[cdf[field_name] == vv, field_name] = ii
 
             # 해당 변수의 데이터 타입을 범주형으로 변환
             cdf[field_name] = cdf[field_name].astype('category')
