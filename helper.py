@@ -775,7 +775,7 @@ def my_logit(data, y, x):
     # 혼동행렬
     cm = confusion_matrix(df['합격여부'], df['예측결과'])
     tn, fp, fn, tp = cm.ravel()
-    cmdf = DataFrame(cm, index = ['True', 'False'], columns=['Positive', 'Negative'])
+    cmdf = DataFrame([[tn, tp], [fn, fp]], index=['True', 'False'], columns=['Negative', 'Positive'])
 
     # RAS(ROC Curve 시각화용)
     ras = roc_auc_score(df['합격여부'], df['예측결과'])
