@@ -737,7 +737,7 @@ class LogitResult:
     def odds_rate_df(self, value):
         self._odds_rate_df = value
 
-def my_logit(data, y, x):
+def my_logit(data, y, x, subset=None):
     """
     로지스틱 회귀분석을 수행한다.
 
@@ -773,27 +773,27 @@ def my_logit(data, y, x):
     df['예측결과'] = df['예측값'] > 0.5
 
     # 혼동행렬
-    cm = confusion_matrix(df['합격여부'], df['예측결과'])
+    cm = confusion_matrix(df[y], df['예측결과'])
     tn, fp, fn, tp = cm.ravel()
     cmdf = DataFrame([[tn, tp], [fn, fp]], index=['True', 'False'], columns=['Negative', 'Positive'])
 
     # RAS(ROC Curve 시각화용)
-    ras = roc_auc_score(df['합격여부'], df['예측결과'])
+    ras = roc_auc_score(df[y], df['예측결과'])
 
     # 위양성율, 재현율, 임계값(사용안함)
-    fpr, tpr, thresholds = roc_curve(df['합격여부'], df['예측결과'])
+    fpr, tpr, thresholds = roc_curve(df[y], df['예측결과'])
 
     # 정확도
-    acc = accuracy_score(df['합격여부'], df['예측결과'])
+    acc = accuracy_score(df[y], df['예측결과'])
     
     # 정밀도
-    pre = precision_score(df['합격여부'], df['예측결과'])
+    pre = precision_score(df[y], df['예측결과'])
 
     # 재현율
-    recall = recall_score(df['합격여부'], df['예측결과'])
+    recall = recall_score(df[y], df['예측결과'])
 
     # F1 score
-    f1 = f1_score(df['합격여부'], df['예측결과'])
+    f1 = f1_score(df[y], df['예측결과'])
 
     # 위양성율
     fallout = fp / (fp + tn)
