@@ -1,5 +1,5 @@
 import numpy as np
-from pandas import DataFrame, MultiIndex, concat
+from pandas import DataFrame, MultiIndex, concat, DatetimeIndex
 from math import sqrt
 from scipy.stats import t, pearsonr, spearmanr
 from sklearn.impute import SimpleImputer
@@ -1093,3 +1093,36 @@ def expTimeData(data, yname, sd_model="m", max_diff=1):
 
 def exp_time_data(data, yname, sd_model="m", max_diff=1):
     expTimeData(data, yname, sd_model, max_diff)
+
+#------------------------------
+# 시계열데이터분석
+# 데이터 프레임의 인덱스를 datetime 형식으로 변환
+#------------------------------
+
+def set_datetime_index(df, field=None, inplace=False):
+    """
+        데이터 프레임의 인덱스를 datetime 형식으로 변환
+        Parameters
+        -------
+        - df: 데이터 프레임
+        - inplace: 원본 데이터 프레임에 적용 여부
+        Returns
+        -------
+        - 인덱스가 datetime 형식으로 변환된 데이터 프레임
+    """
+
+    if inplace:
+        if field is not None:
+            df.set_index(field, inplace=True)
+
+        df.index = DatetimeIndex(df.index.values, freq=df.index.inferred_freq)
+        df.sort_index(inplace=True)
+    else:
+        cdf = df.copy()
+
+        if field is not None:
+            cdf.set_index(field, inplace=True)
+
+        cdf.index = DatetimeIndex(cdf.index.values, freq=cdf.index.inferred_freq)
+        cdf.sort_index(inplace=True)
+        return cdf
