@@ -491,7 +491,7 @@ def allTest(*any, isPrint=True):
     -------
     - df: 검정 결과 데이터 프레임
     """
-    cc = concat([normalityTest(*any), equalVarianceTest(*any), independenceTest(*any)])
+    cc = concat([normalityTest(*any, isPrint=False), equalVarianceTest(*any, isPrint=False), independenceTest(*any, isPrint=False)])
 
     if isPrint:
         prettyPrint(cc)
