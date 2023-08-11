@@ -1,5 +1,5 @@
 import numpy as np
-from pandas import DataFrame, MultiIndex, concat, DatetimeIndex
+from pandas import DataFrame, MultiIndex, concat, DatetimeIndex, Series
 from math import sqrt
 from scipy.stats import t, pearsonr, spearmanr
 from sklearn.impute import SimpleImputer
@@ -27,7 +27,10 @@ from tabulate import tabulate
 
 
 # 시각화 폰트 - tabulate의 스타일을 지정해 변경할 수 있다(tablefmt="psql")
-def prettyPrint(df, headers="keys", tablefmt="psql", numalign="right"):
+def prettyPrint(df, headers="keys", tablefmt="psql", numalign="right", title="value"):
+    # print(tabulate(df, headers=headers, tablefmt=tablefmt, numalign=numalign))
+    if isinstance(df, Series):
+        df = DataFrame(df, columns=[title])
     print(tabulate(df, headers=headers, tablefmt=tablefmt, numalign=numalign))
 
 
@@ -233,7 +236,7 @@ def replaceOutlier(df, fieldName):
 
 
 # 데이터 프레임에서 지정된 필드를 범주형으로 변경
-def setCategory(df, fields=[]):
+def setCategory(df, fields=[], labelling=True):
     """
     데이터 프레임에서 지정된 필드를 범주형으로 변경한다.
 
@@ -264,16 +267,24 @@ def setCategory(df, fields=[]):
                 continue
 
             # 가져온 변수명에 대해 값의 종류별로 빈도를 카운트 한 후 인덱스 이름순으로 정렬
-            vc = cdf[field_name].value_counts().sort_index()
+            # vc = cdf[field_name].value_counts().sort_index()
             # print(vc)
 
             # 인덱스 이름순으로 정렬된 값의 종류별로 반복 처리
-            for ii, vv in enumerate(list(vc.index)):
-                # 일련번호값으로 치환
-                cdf.loc[cdf[field_name] == vv, field_name] = ii
+            # for ii, vv in enumerate(list(vc.index)):
+            #     # 일련번호값으로 치환
+            #     cdf.loc[cdf[field_name] == vv, field_name] = ii
 
             # 해당 변수의 데이터 타입을 범주형으로 변환
             cdf[field_name] = cdf[field_name].astype('category')
+
+            if labelling:
+                mydict = {}
+
+                for i, v in enumerate(cdf[field_name].dtypes.categories):
+                    mydict[v] = i
+                
+                cdf[field_name] = cdf[field_name].map(mydict)
 
     return cdf
 
