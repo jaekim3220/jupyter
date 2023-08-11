@@ -284,7 +284,7 @@ def setCategory(df, fields=[], labelling=True):
                 for i, v in enumerate(cdf[field_name].dtypes.categories):
                     mydict[v] = i
                 
-                cdf[field_name] = cdf[field_name].map(mydict)
+                cdf[field_name] = cdf[field_name].map(mydict).astype(int)
 
     return cdf
 
