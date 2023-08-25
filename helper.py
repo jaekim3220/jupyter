@@ -6,7 +6,7 @@ from sklearn.impute import SimpleImputer
 from scipy.stats import shapiro, normaltest, ks_2samp, bartlett, fligner, levene, chi2_contingency
 from statsmodels.formula.api import ols
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from pca import pca
 from statsmodels.formula.api import logit
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score, recall_score, precision_score, f1_score
@@ -1171,3 +1171,109 @@ def set_datetime_index(df, field=None, inplace=False):
         cdf.index = DatetimeIndex(cdf.index.values, freq=cdf.index.inferred_freq)
         cdf.sort_index(inplace=True)
         return cdf
+    
+
+
+#------------------------------
+# 머신러닝
+#------------------------------
+# 다항식 변환
+def convertPoly(data, degree=2, include_bias=False):
+    poly = PolynomialFeatures(degree=degree, include_bias=include_bias)
+    fit = poly.fit_transform(data)
+    x = DataFrame(fit, columns=poly.get_feature_names_out())
+    return x
+
+# 머신러닝 추세선 유도
+def getTrend(x, y, degree=2, value_count=100):
+    # degree=2 -> [ a, b, c ] ==> ax^2 + bx + c
+    coeff = np.polyfit(x, y, degree)    #x에 따라 y값이 변하는 2차 방정식 생성
+
+    if type(x) == 'list':   #x가 list 형식인 경우
+        minx = min(x)
+        maxx = max(x)
+    else:
+        minx = x.min()
+        maxx = x.max()
+
+    Vtrend = np.linspace(minx, maxx, value_count)   #평면좌표 상에서의 가상의 x값
+
+    Ttrend = coeff[-1]  #생성된 x값에 따른 y값
+    for i in range(0, degree):
+        Ttrend += coeff[i] * Vtrend ** (degree - i)
+
+    return (Vtrend, Ttrend)
+
+
+'''
+def regplot 변수설명
+x_left : 왼쪽 그래프의 x 축 데이터
+y_left : 왼쪽 그래프의 y 축 데이터
+y_left_pred : 왼쪽 그래프에서의 예측된 y 값 데이터
+값이 주어지면 예측된 데이터에 대한 산점도와 추세선이 함께 작성
+left_title : 왼쪽 그래프의 제목
+x_right : 오른쪽 그래프의 x 축 데이터
+값이 주어지면 오른쪽 그래프 작성
+y_right : 오른쪽 그래프의 y 축 데이터
+y_right_pred : 오른쪽 그래프에서의 예측된 y 값 데이터
+값이 주어지면 오른쪽 그래프에 예측된 데이터에 대한 산점도와 추세선 작성
+right_title : 오른쪽 그래프의 제목
+save_path : 그래프를 저장할 파일 경로
+값이 주어지면 그래프를 해당 경로에 저장
+getTrend() : 추세선을 계산하는 함수
+x, y 데이터에 대한 추세선의 x, y 값을 반환
+'''
+def regplot(x_left, y_left, y_left_pred=None, left_title=None, x_right=None, y_right=None, y_right_pred=None, right_title=None, figsize=(10, 5), save_path=None):
+    # x_left, y_left는 필수 입력 사항
+    subcount = 1 if x_right is None else 2
+
+    fig, ax = plt.subplots(1, subcount, figsize=figsize)
+
+    axmain = ax if subcount == 1 else ax[0]
+
+    # 왼쪽 산점도
+    sb.scatterplot(x=x_left, y=y_left, label='data', ax=axmain)
+
+    # 왼쪽 추세선
+    x, y = getTrend(x_left, y_left)
+    sb.lineplot(x=x, y=y, color='blue', linestyle='--', ax=axmain)
+
+    # 왼쪽 추정치
+    if y_left_pred is not None:
+        sb.scatterplot(x=x_left, y=y_left_pred, label='predict', ax=axmain)
+        # 추정치에 대한 추세선
+        x,y = getTrend(x_left, y_left_pred)
+        sb.lineplot(x=x, y=y, color='red', linestyle='--', ax=axmain)
+
+    if left_title is not None:
+        axmain.set_title(left_title)
+
+    axmain.legend()
+    axmain.grid()
+
+    if x_right is not None:
+        # 오른쪽 산점도
+        sb.scatterplot(x=x_right, y=y_right, label='data', ax=ax[1])
+        
+        # 오른쪽 추세선
+        x, y = getTrend(x_right, y_right)
+        sb.lineplot(x=x, y=y, color='blue', linestyle="--", ax=ax[1])
+    
+        # 오른쪽 추정치
+        if y_right_pred is not None:
+            sb.scatterplot(x=x_right, y=y_right_pred, label='predict', ax=ax[1])
+            # 추정치에 대한 추세선
+            x, y = getTrend(x_right, y_right_pred)
+            sb.lineplot(x=x, y=y, color='red', linestyle="--", ax=ax[1])
+        
+        if right_title is not None:
+            ax[1].set_title(right_title)
+            
+        ax[1].legend()
+        ax[1].grid()
+    
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300)
+        
+    plt.show()
+    plt.close()
