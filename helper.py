@@ -1,22 +1,27 @@
-import numpy as np
-from pandas import DataFrame, MultiIndex, concat, DatetimeIndex, Series
-from math import sqrt
-from scipy.stats import t, pearsonr, spearmanr
-from sklearn.impute import SimpleImputer
-from scipy.stats import shapiro, normaltest, ks_2samp, bartlett, fligner, levene, chi2_contingency
-from statsmodels.formula.api import ols
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from pca import pca
-from statsmodels.formula.api import logit
-from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score, recall_score, precision_score, f1_score
-from matplotlib import pyplot as plt
-import seaborn as sb
 import sys
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import numpy as np
+import seaborn as sb
+from pca import pca
+from math import sqrt
+from tabulate import tabulate
+from matplotlib import pyplot as plt
+
+from pandas import DataFrame, MultiIndex, concat, DatetimeIndex, Series
+
+from scipy.stats import t, pearsonr, spearmanr
+from scipy.stats import shapiro, normaltest, ks_2samp, bartlett, fligner, levene, chi2_contingency
+
+from statsmodels.formula.api import ols, logit
 from statsmodels.tsa.stattools import adfuller  # adfuller를 사용해 데이터가 정상성을 만족하는지 판단 가능
 from statsmodels.tsa.seasonal import seasonal_decompose
-from tabulate import tabulate
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score, recall_score, precision_score, f1_score, r2_score, mean_absolute_error, mean_squared_error
+from sklearn.model_selection import train_test_split    #train/test 데이터 분리
+from sklearn.linear_model import LinearRegression   #선형회귀
 #--------------------------------------------------
 # 모듈 불러오기
 # import sys
@@ -597,6 +602,87 @@ def spearman_r(df, isPrint=True):
         return rdf
 
 
+'''
+# 모듈 지정
+설명력
+평균절대오차
+평균제곱오차
+평균오차
+평균 절대 백분 오차 비율
+평균 비율 오차
+'''
+class RegMetric:
+    def __init__(self, y, y_pred):
+        # 설명력
+        self._r2 = r2_score(y, y_pred)
+        # 평균절대오차
+        self._mae = mean_absolute_error(y, y_pred)
+        # 평균 제곱 오차
+        self._mse = mean_squared_error(y, y_pred)
+        # 평균 오차
+        self._rmse = np.sqrt(self._mse)
+
+        # 평균 절대 백분오차 비율
+        if type(y) == Series:
+            self._mape = np.mean(np.abs((y.values - y_pred) / y.values) * 100)
+        else:
+            self._mape = np.mean(np.abs((y - y_pred) / y) * 100)
+
+        # 평균 비율 오차
+        if type(y) == Series:   
+            self._mpe = np.mean((y.values - y_pred) / y.values * 100)
+        else:
+            self._mpe = np.mean((y - y_pred) / y * 100)
+
+    @property
+    def r2(self):
+        return self._r2
+
+    @r2.setter
+    def r2(self, value):
+        self._r2 = value
+
+    @property
+    def mae(self):
+        return self._mae
+
+    @mae.setter
+    def mae(self, value):
+        self._mae = value
+
+    @property
+    def mse(self):
+        return self._mse
+
+    @mse.setter
+    def mse(self, value):
+        self._mse = value
+
+    @property
+    def rmse(self):
+        return self._rmse
+
+    @rmse.setter
+    def rmse(self, value):
+        self._rmse = value
+
+    @property
+    def mape(self):
+        return self._mape
+
+    @mape.setter
+    def mape(self, value):
+        self._mape = value
+
+    @property
+    def mpe(self):
+        return self._mpe
+
+    @mpe.setter
+    def mpe(self, value):
+        self._mpe = value     
+        
+
 # 회귀분석 결과를 위한 class
 class OlsResult:
     def __init__(self):
@@ -607,6 +693,10 @@ class OlsResult:
         self._result = None
         self._goodness = None
         self._varstr = None
+        self._coef = None   #기울기
+        self._intercept = None  #절편
+        self._trainRegMetric = None #학습
+        self._testRegMetric = None  #테스트
 
     @property
     def model(self):
@@ -684,6 +774,45 @@ class OlsResult:
     @varstr.setter
     def varstr(self, value):
         self._varstr = value
+
+    @property
+    def coef(self):   #기울기
+        return self._coef
+
+    @coef.setter
+    def coef(self, value):
+        self._coef = value
+
+    @property
+    def intercept(self):    #절편
+        return self._intercept
+
+    @intercept.setter
+    def intercept(self, value):
+        self._intercept = value
+
+    @property
+    def trainRegMetric(self):   #학습
+        return self._trainRegMetric
+
+    @trainRegMetric.setter
+    def trainRegMetric(self, value):
+        self._trainRegMetric = value
+
+    @property
+    def testRegMetric(self):    #테스트
+        return self._testRegMetric
+
+    @testRegMetric.setter
+    def testRegMetric(self, value):
+        self._testRegMetric = value
+
+    def setRegMetric(self, y_train, y_train_pred, y_test=None, y_test_pred=None):
+        self.trainRegMetric = RegMetric(y_train, y_train_pred)
+        
+        if y_test is not None and y_test_pred is not None:
+            self.testRegMetric = RegMetric(y_test, y_test_pred)
+
 
 # 회귀분석을 수행
 def myOls(data, y=None, x=None, expr=None):
@@ -1277,3 +1406,59 @@ def regplot(x_left, y_left, y_left_pred=None, left_title=None, x_right=None, y_r
         
     plt.show()
     plt.close()
+
+
+# 머신러닝(회귀분석-지도학습)
+'''
+class OlsResult 갱신, class RegMetric 추가
+ml_ols 모듈 설명
+xnames에 독립변수 이름(들) 입력- list, 문자열
+yname에 종속변수 이름
+degree로 차수(1-단순선형회귀, 2-다항회귀)
+test_size로 데이터 분할(train/test)
+random_state로 학습 데이터 조합 설정 가능(데이터 분할 고정)
+'''
+def ml_ols(data, xnames, yname, degree=1, test_size=0.25, scalling=False, random_state=777):
+    # 표준화 설정이 되어 있다면 표준화 수행
+    if scalling:
+        data = scalling(data)
+
+    # 독립변수 이름이 문자열로 전달되었다면 콤마 단위로 잘라서 리스트로 변환
+    if type(xnames) == str:
+        xnames = xnames.split(',')
+
+    # 독립변수 추출
+    x = data.filter(xnames)
+
+    # 종속변수 추출
+    y = data.filter([yname])
+
+    # 2차식 이상으로 설종된 경우 차수에 맞게 변환
+    if degree > 1:
+        x = convertPoly(x, degree=degree)
+
+    # 데이터 분할 비율이 0보다 크면 분할 수행
+    if test_size > 0:
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=random_state)
+    else:
+        x_train = x
+        y_train = y
+        x_test = None
+        y_test = None
+
+    # 회귀분석 수행
+    model = LinearRegression()
+    fit = model.fit(x_train, y_train)
+
+    result = OlsResult()
+    result.model = model
+    result.fit = fit
+    result.coef = fit.coef_
+    result.intercept = fit.intercept_
+
+    if x_test is not None and y_test is not None:
+        result.setRegMetric(y_train, fit.predict(x_train), y_test, fit.predict(x_test))
+    else:
+        result.setRegMetric(y_train, fit.predict(x_train))
+
+    return result
