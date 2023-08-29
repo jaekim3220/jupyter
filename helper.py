@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 
 from pandas import DataFrame, MultiIndex, concat, DatetimeIndex, Series
 
+from scipy import stats #확률 분포, 통계 분석, 신호 처리, 최적화, 선형 대수 등의 다양한 기능을 포함
 from scipy.stats import t, pearsonr, spearmanr
 from scipy.stats import shapiro, normaltest, ks_2samp, bartlett, fligner, levene, chi2_contingency
 
@@ -1424,14 +1425,15 @@ def ml_ols(data, xnames, yname, degree=1, test_size=0.25, scalling=False, random
         data = scalling(data)
 
     # 독립변수 이름이 문자열로 전달되었다면 콤마 단위로 잘라서 리스트로 변환
+    # 띄어쓰기 금지 ex) xnames="길이,높이,두께" -> True / xnames="길이, 높이, 두께" -> False
     if type(xnames) == str:
         xnames = xnames.split(',')
 
     # 독립변수 추출
     x = data.filter(xnames)
 
-    # 종속변수 추출
-    y = data.filter([yname])
+    # 종속변수 추출 - 1차원 y = data.filter([yname])은 2차원 DF 형태
+    y = data[yname]
 
     # 2차식 이상으로 설종된 경우 차수에 맞게 변환
     if degree > 1:
@@ -1460,5 +1462,56 @@ def ml_ols(data, xnames, yname, degree=1, test_size=0.25, scalling=False, random
         result.setRegMetric(y_train, fit.predict(x_train), y_test, fit.predict(x_test))
     else:
         result.setRegMetric(y_train, fit.predict(x_train))
+
+    '''
+    F/02./07-지도학습(5)
+    ## #03. 결과보고에 필요한 값 구하기 참고
+    '''
+    # 절편과 계수를 하나의 배열로 결합
+    params = np.append(result.intercept, result.coef)
+
+    # 상수항 추가하기
+    designX = x.copy()
+    designX.insert(0, '상수', 1)
+
+    # 행렬곱 구하기
+    dot = np.dot(designX.T,designX)
+
+    # 행렬곱에 대한 역행렬
+    inv = np.linalg.inv(dot)
+
+    # 역행렬의 대각선 값 반환
+    dia = inv.diagonal()
+
+    # 평균 제곱오차 구하기
+    predictions = result.fit.predict(x) #1차원
+    MSE = (sum((y-predictions)**2)) / (len(designX)-len(designX.iloc[0]))
+
+    # 표준오차
+    se_b = np.sqrt(MSE * dia)
+
+    # t-value구하기
+    ts_b = params / se_b
+
+    # p-value 구하기 - 자유도를 위해 전체 행에서 1개 빼고 계산
+    p_values = [2*(1-stats.t.cdf(np.abs(i),(len(designX)-len(designX.iloc[0])))) for i in ts_b]
+
+    # VIP
+    vif = []
+    for i, v in enumerate(xnames):
+        j = list(data.columns).index(v)
+        vif.append(variance_inflation_factor(data, j))
+
+    # 결과표 구성하기
+    result.table = DataFrame({
+        "종속변수": [yname] * len(xnames),
+        "독립변수": xnames,
+        "B": result.coef,
+        "표준오차": se_b[1:],
+        "β": 0,
+        "t": ts_b[1:],
+        "유의확률": p_values[1:],
+        "VIF": vif,
+    })
 
     return result
