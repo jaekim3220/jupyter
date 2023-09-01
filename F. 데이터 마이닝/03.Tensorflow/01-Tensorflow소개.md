@@ -223,3 +223,15 @@ $$Y^{relu} = \begin{cases}0 \,\,\,\,\,\,\,\, if  \,\,x \leq \theta\\x \,\,\,\,\,
 ![op](res/optimizer.jpg)
 
 > 잘 모르겠으면 "Adam" ~!!!
+
+
+## #07. Tensorflow 지도학습 구성
+
+| 구분 | 모델 | 활성화 함수 | 옵티마이저 | 손실함수 | 평가지표 | 대표예제 |
+|--|--|--|--|--|--|--|
+| 논리연산 | 단층퍼셉트론 | linear | SGD | mse | acc | OR, AND Gate |
+| 논리연산 | 다층퍼셉트론 | relu, sigmoid | RMSprop | mse | acc | XOR Gate |
+| 회귀 | 단순선형회귀 | relu, linear | adam | mse | mae | |
+| 회귀 | 다중선형회귀 | relu, relu, linear | adam | mse | ase | 보스턴 집값 예측 |
+| 분류 | 이항분류(로지스틱 회귀) | [relu,] sigmoid | rmsporp | binary_crossentropy | acc | 타이타닉 생존률 예측 |
+| 분류 | 다항분류(소프트맥스 회귀) | [relu, ...] softmax | adam 혹은 rmsprop | categorical_crossentropy | acc | iris 분류 |
