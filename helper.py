@@ -1512,8 +1512,8 @@ def ml_ols(data, xnames, yname, degree=1, test_size=0.25, use_scalling=False, ra
     result = OlsResult()
     result.model = model
     result.fit = fit
-    result.coef = fit.coef_
-    result.intercept = fit.intercept_
+    result.coef = fit.coef_ #계수
+    result.intercept = fit.intercept_   #절편
 
     result.x_train = x_train.copy()
     result.y_train = y_train.copy()
@@ -1527,14 +1527,30 @@ def ml_ols(data, xnames, yname, degree=1, test_size=0.25, use_scalling=False, ra
     else:
         result.setRegMetric(y_train, result.train_pred)
 
-    '''
-    F/02./07-지도학습(5)
-    ## #03. 결과보고에 필요한 값 구하기 참고
-    '''
-    # 절편과 계수를 하나의 배열로 결합
-    params = np.append(result.intercept, result.coef)
+    # 결과표 함수 호출
+    x_train[yname] = y_train
+    result.table = get_ols_table(x_train, xnames, yname, result.intercept, result.coef, result.train_pred)
 
-    # 상수항 추가하기
+    return result
+
+
+# 예측값을 위한 predict
+def get_ols_table(data, xnames, yname, intercept, coef, predict):
+    # 독립변수 이름이 문자열로 전달되면 콤마 단위로 잘라서 리스트로 변화
+    # # 띄어쓰기 금지 ex) xnames="길이,높이,두께" -> True / xnames="길이, 높이, 두께" -> False
+    if type(xnames) == str:
+        xnames = xnames.split(',')
+
+    # 독립변수 추출
+    x = data.filter(xnames)
+
+    # 종속변수 추출 - 1차원 y = data.filter([yname])은 2차원 DF 형태
+    y = data[yname]
+
+    # 절편과 계수를 하나의 배열로 결합
+    params = np.append(intercept, coef)
+
+    # 상수항 추가
     designX = x.copy()
     designX.insert(0, '상수', 1)
 
@@ -1544,40 +1560,40 @@ def ml_ols(data, xnames, yname, degree=1, test_size=0.25, use_scalling=False, ra
     # 행렬곱에 대한 역행렬
     inv = np.linalg.inv(dot)
 
-    # 역행렬의 대각선 값 반환
+    # 역행렬의 대각선 반환
     dia = inv.diagonal()
 
-    # 평균 제곱오차 구하기
-    predictions = result.fit.predict(x) #1차원
-    MSE = (sum((y-predictions)**2)) / (len(designX)-len(designX.iloc[0]))
+    # 평균 제곱오차
+    MSE = (sum((y-predict)**2)) / (len(designX)-len(designX.iloc[0]))
 
     # 표준오차
     se_b = np.sqrt(MSE * dia)
 
-    # t-value구하기
+    # t 값
     ts_b = params / se_b
 
-    # p-value 구하기 - 자유도를 위해 전체 행에서 1개 빼고 계산
+    # p값
     p_values = [2*(1-stats.t.cdf(np.abs(i),(len(designX)-len(designX.iloc[0])))) for i in ts_b]
-
+    
     # VIF
     vif = []
 
-    # 훈련 데이터에 대한 독립변수와 종속변수를 결합한 완전한 DF 준비
-    data = x_train.copy()
-    data[yname] = y_train
+    # 훈련데이터에 대한 독립/종속변수를 결합한 완전한 DF 준비
+    data = x.copy()
+    data[yname] = y
     # print(data)
     # print("-"*50)
 
-    for i, v in enumerate(x_train.columns):
-        j = list(data.columns).index(v)
-        vif.append(variance_inflation_factor(data, j))
+    # 다중 공선성 계산을 위한 VIF 생성 
+    for i, v in enumerate(x.columns):
+        j = list(data.columns).index(v) #행의 index 정보 추출
+        vif.append(variance_inflation_factor(data, j))  #VIF를 계산하고, vif 리스트에 추가
 
-    # 결과표 구성하기
-    result.table = DataFrame({
-        "종속변수": [yname] * len(x_train.columns),
-        "독립변수": x_train.columns,
-        "B": result.coef,
+    # 결과표 구성
+    table = DataFrame({
+        "종속변수": [yname] * len(x.columns),
+        "독립변수": x.columns,
+        "B": coef,
         "표준오차": se_b[1:],
         "β": 0,
         "t": ts_b[1:],
@@ -1585,7 +1601,7 @@ def ml_ols(data, xnames, yname, degree=1, test_size=0.25, use_scalling=False, ra
         "VIF": vif,
     })
 
-    return result
+    return table
 
 
 # 선형회귀 모델의 다항회귀 모델화 - sklearn의 PolynomialFeatures
