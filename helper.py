@@ -1177,7 +1177,7 @@ def myLogit(data, y, x, subset=None):
     # 혼동행렬
     cm = confusion_matrix(df[y], df['예측결과'])
     tn, fp, fn, tp = cm.ravel()
-    cmdf = DataFrame([[tn, tp], [fn, fp]], index=['True', 'False'], columns=['Negative', 'Positive'])
+    cmdf = DataFrame([[tn, fn], [fp, tp]], index=['True', 'False'], columns=['Negative', 'Positive'])
 
     # RAS
     ras = roc_auc_score(df[y], df['예측결과'])
@@ -1640,3 +1640,58 @@ def tf_result_plot(result, figsize=(15, 5), dpi=150):
     plt.close()
 
     return result_df
+
+
+# 로지스틱 회귀 결과 검정
+def tf_logit_result(model, fit, x, y):    
+    # 예측값 생성
+    pred_bool = model.predict(x).flatten() > 0.5
+    pred = pred_bool.astype(int)
+    
+    # 혼동행렬
+    cm = confusion_matrix(y, pred)
+    tn, fp, fn, tp = cm.ravel()
+    cmdf = DataFrame([[tn, fn], [fp, tp]], index=['True', 'False'], columns=['Negative', 'Positive'])
+
+    # RAS
+    ras = roc_auc_score(y, pred)
+
+    # 위양성율, 재현율, 임계값(사용안함)
+    fpr, tpr, thresholds = roc_curve(y, pred)
+
+    # 정확도
+    acc = accuracy_score(y, pred)
+
+    # 정밀도
+    pre = precision_score(y, pred)
+
+    # 재현율
+    recall = recall_score(y, pred)
+
+    # F1 score
+    f1 = f1_score(y, pred)
+
+    # 위양성율
+    fallout = fp / (fp + tn)
+
+    # 특이성
+    spe = 1 - fallout
+
+    result_df = DataFrame({'정확도(Accuracy)':[acc], '정밀도(Precision)':[pre], '재현율(Recall, TPR)':[recall], '위양성율(Fallout, FPR)': [fallout], '특이성(Specificity, TNR)':[spe], 'RAS': [ras], 'f1_score':[f1]})
+
+    # 모델 가중치와 편향 얻기
+    weights, bias = model.layers[1].get_weights()
+    
+    # 오즈비 계산
+    odds_ratio = np.exp(weights[0])
+
+    logit_result = LogitResult()
+    logit_result.model = model
+    logit_result.fit = fit
+    logit_result.summary = model.summary()
+    #logit_result.prs = prs
+    logit_result.cmdf = cmdf
+    logit_result.result_df = result_df
+    logit_result.odds_rate_df = odds_ratio
+    
+    return logit_result
