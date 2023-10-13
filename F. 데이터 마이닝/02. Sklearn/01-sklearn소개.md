@@ -40,3 +40,7 @@ model 객체가 갖는 `fit()` 메서드에 독립변수(`X_train`), 종속변�
 - Pandas
 - Matplotlib
 - Seaborn
+
+# 지도학습
+- Tensorflow fit(학습) 결과값을 return
+- scikit-learn은 fit(학습) 결과값을 return 받을 필요가 없음
