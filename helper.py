@@ -23,6 +23,8 @@ from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, accuracy_score, recall_score, precision_score, f1_score, r2_score, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split    #train/test 데이터 분리
 from sklearn.linear_model import LinearRegression   #선형회귀
+from sklearn.model_selection import cross_val_score, cross_validate
+from sklearn.model_selection import GridSearchCV
 #--------------------------------------------------
 # 모듈 불러오기
 # import sys
@@ -1695,3 +1697,50 @@ def tf_logit_result(model, fit, x, y):
     logit_result.odds_rate_df = odds_ratio
     
     return logit_result
+
+
+'''
+모듈설명
+- 데이터를 학습하고 성능을 평가
+- 모델의 성능을 교차 검증을 통해 안정적으로 측정
+- 결과를 분석 및 시각화
+> 머신러닝 모델 성능 평가
+F. 데이터 마이닝\02. Sklearn\모듈화.ipynb 참고
+'''
+# ML성능1
+# **kargs: 다양한 하이퍼파라미터(옵션)들을 받을 수 있는 가변 인자
+def singleML(modelName, x, y=None, cv=5, **kargs):
+    # 모델 생성
+    model = modelName(**kargs)
+    # 교차 검증
+    score = cross_val_score(model, x, y, cv=cv).mean()
+    # 결과 DF
+    df = DataFrame(cross_validate(model, x, y, cv=cv))
+    return [model, score, df]
+
+'''
+두 번째 모듈
+GridSearchCV : 머신러닝에서 모델의 성능향상을 위해 쓰이는 기법중 하나. 
+사용자가 직접 모델의 하이퍼 파라미터의 값을 리스트로 입력하면 
+값에 대한 경우의 수마다 예측 성능을 측정 평가/비교하면서 
+최적의 하이퍼 파라미터 값을 찾는 과정을 진행.
+'''
+# # ML성능2
+# **kargs: 다양한 하이퍼파라미터(옵션)들을 받을 수 있는 가변 인자
+def gridML(modelName, x, y=None, params={}, cv=5, **kargs):
+    # 모델 생성
+    model = modelName(**kargs)
+    # grid 생성
+    grid = GridSearchCV(model, param_grid=params, cv=cv)
+
+    try:
+        grid.fit(x,y)   # 지도학습
+    except:
+        grid.fit(x) # 비지도학습
+
+    result_df = DataFrame(grid.cv_results_["params"])
+    result_df['mean_test_score'] = grid.cv_results_['mean_test_score']
+    result_df.sort_values(by='mean_test_score', ascending=False)
+    
+    return [grid.best_estimator_, grid.best_score_, result_df]
+
