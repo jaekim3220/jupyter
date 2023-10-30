@@ -1,0 +1,7 @@
+x_names : 독립변수 이름
+
+session_id는 random state와 비슷
+fold : 상위 몇 개를 고를 건지 설정
+
+blended_models : 앙상블은 (votting, gagging, boosting)
+-> 알고리즘을 결합해서 새로운 알고리즘을 생성
